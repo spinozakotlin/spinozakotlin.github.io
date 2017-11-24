@@ -305,29 +305,21 @@ redirect {
 }
 ~~~
 
-Remember to **import Spark statically** instead of prefixing it as Spark.redirect
-
 ## Custom error handling {#error-handling}
 
 ### Not found (code 404) handling
 
-~~~java
-// Using string/html
-notFound("<html><body><h1>Custom 404 handling</h1></body></html>");
-~~~
-
-~~~java
-// Using Route
-notFound((req, res) -> {
-    res.type("application/json");
-    return "{\"message\":\"Custom 404\"}";
-});
+~~~kotlin
+notFound {
+    "404 - Spinoza couldn't find what you're looking for"        
+}
 ~~~
 
 ### Internal server error (code 500) handling
-~~~java
-// Using string/html
-internalServerError("<html><body><h1>Custom 500 handling</h1></body></html>");
+~~~kotlin
+internalServerError {
+    "Very internal server error"        
+}
 ~~~
 
 ~~~java
