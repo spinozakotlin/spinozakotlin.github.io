@@ -324,14 +324,15 @@ internalServerError {
 
 ## Exception Mapping
 To handle exceptions of a configured type for all routes and filters:
-~~~java
-get("/throwexception", (request, response) -> {
-    throw new YourCustomException();
-});
+~~~kotlin
+get("/exception") {
+    throw AuthException("protection")
+}
 
-exception(YourCustomException.class, (exception, request, response) -> {
-    // Handle the exception here
-});
+exception(AuthException::class) {
+    status(401)
+    response.body(exception.message)
+}
 ~~~
 
 ## Static Files
