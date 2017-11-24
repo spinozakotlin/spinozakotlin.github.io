@@ -211,8 +211,11 @@ response                              // the response itself
     cookie("foo", "bar", 3600, true)  // secure cookie
     removeCookie("foo")               // remove cookie
     .header("FOO", "bar")             // sets header FOO with value bar
+~~~
 
-// sessions
+## Sessions
+Server created session functionality is implicitly available in route countext
+~~~kotlin
 session()                         // get session
 session(create = true)            // create and return session
 session().attribute("user")       // Get session attribute 'user'
@@ -222,6 +225,7 @@ session().attributes()            // Get all session attributes
 session().id()                    // Get session id
 session().isNew()                 // Check if session is new
 session().raw()                   // Return servlet object
+~~~
 
 ## Halting
 To immediately stop a request within a filter or route use `halt()`:
