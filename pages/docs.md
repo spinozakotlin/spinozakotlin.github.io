@@ -52,54 +52,39 @@ You can follow the progress of spark-kotlin on [(GitHub)](https://github.com/per
 
 ## Getting started
 
-**1:** Create a new maven project and add the dependency to your [POM.xml](http://maven.apache.org/pom.html):
+**1:** Create a new gradle project and add the dependency to your build.gradle file.
 {% include macros/mavenDep.md %}
 
 **2:** Start coding:
-~~~java
-import static spark.Spark.*;
+~~~kotlin
+import spinoza.*
 
-public class HelloWorld {
-    public static void main(String[] args) {
-        get("/hello", (req, res) -> "Hello World");
-    }
+fun main(args: Array<String>) {
+    get("/salve") {
+        "Salve Orbis Terrarum"
+   
+        }
 }
 ~~~
 
 **3:** Run and view:
 ~~~bash
-http://localhost:4567/hello
+http://localhost:4567/salve
 ~~~
-
-To see more console output from Spark (debug info, etc), you have to [add a logger](#how-do-i-enable-logging) to your project.
 
 ## Stopping the Server
 By calling the stop() method the server is stopped and all routes are cleared.
 
-~~~java
-stop();
+~~~kotlin
+stop()
 ~~~
 
 ### Wait, what about starting the server?
 The server is automatically started when you do something that requires the server to be started (i.e. declaring a route or setting the port).  
 You can also manually start the server by calling `init()`.
 
-You can specify what should happen if initialization fails: 
-
-~~~java
-initExceptionHandler((e) -> System.out.println("Uh-oh"));
-~~~
-
-The default behaviour is to log and shut down: 
-~~~java
-private Consumer<Exception> initExceptionHandler = (e) -> {
-    LOG.error("ignite failed", e);
-    System.exit(100);
-};
-~~~
-
 ## Routes
-The main building block of a Spark application is a set of routes. A route is made up of three simple pieces:
+The main building block of a Spinoza application is a set of routes. A route is made up of three simple pieces:
 
 * A **verb** (get, post, put, delete, head, trace, connect, options)
 * A **path** (/hello, /users/:name)
@@ -108,51 +93,52 @@ The main building block of a Spark application is a set of routes. A route is ma
 Routes are matched in the order they are defined. The first route that matches the request is invoked.  
 Always statically import Spark methods to ensure good readability:
 
-~~~java
-get("/", (request, response) -> {
+~~~kotlin
+get("/") {
     // Show something
-});
+}
 
-post("/", (request, response) -> {
+post("/") {
     // Create something
-});
+}
 
-put("/", (request, response) -> {
+put("/") {
     // Update something
-});
+}
 
-delete("/", (request, response) -> {
+delete("/") {
     // Annihilate something
-});
+}
 
-options("/", (request, response) -> {
+options("/") -> {
     // Appease something
-});
+}
 ~~~
 
-Route patterns can include named parameters, accessible via the `params()` method on the request object:
-~~~java
-// matches "GET /hello/foo" and "GET /hello/bar"
-// request.params(":name") is 'foo' or 'bar'
-get("/hello/:name", (request, response) -> {
-    return "Hello: " + request.params(":name");
-});
+Route patterns can include named parameters, accessible via `params()`:
+~~~kotlin
+// matches "GET /saymy/foo" and "GET /saymy/bar"
+// params(":name") is 'foo' or 'bar'
+get("/saymy/:name") {
+    params(":name")
+}
 ~~~
 
 Route patterns can also include splat (or wildcard) parameters. These parameters can be accessed by using the `splat()` method on the request object:
 
-~~~java
+~~~kotlin
 // matches "GET /say/hello/to/world"
-// request.splat()[0] is 'hello' and request.splat()[1] 'world'
-get("/say/*/to/*", (request, response) -> {
-    return "Number of splat parameters: " + request.splat().length;
-});
+// TODO: splat is not done
+get("/say/*/to/*") {
+    "Number of splat parameters: " + splat()?.size
+}
 ~~~
 
 ### Path groups
 If you have a lot of routes, it can be helpful to separate them into groups. This can be done by calling the `path()` method, which takes a `String prefix` and gives you a scope to declare routes and filters (or nested paths) in:
 
 ~~~java
+// TODO: NOT DONE IN SPINOZA YET!
 path("/api", () -> {
     before("/*", (q, a) -> log.info("Received api call"));
     path("/email", () -> {
@@ -168,100 +154,86 @@ path("/api", () -> {
 });
 ~~~
 
-## Request
-Request information and functionality is provided by the request parameter:
-~~~java
-request.attributes();             // the attributes list
-request.attribute("foo");         // value of foo attribute
-request.attribute("A", "V");      // sets value of attribute A to V
-request.body();                   // request body sent by the client
-request.bodyAsBytes();            // request body as bytes
-request.contentLength();          // length of request body
-request.contentType();            // content type of request.body
-request.contextPath();            // the context path, e.g. "/hello"
-request.cookies();                // request cookies sent by the client
-request.headers();                // the HTTP header list
-request.headers("BAR");           // value of BAR header
-request.host();                   // the host, e.g. "example.com"
-request.ip();                     // client IP address
-request.params("foo");            // value of foo path parameter
-request.params();                 // map with all parameters
-request.pathInfo();               // the path info
-request.port();                   // the server port
-request.protocol();               // the protocol, e.g. HTTP/1.1
-request.queryMap();               // the query map
-request.queryMap("foo");          // query map for a certain parameter
-request.queryParams();            // the query param list
-request.queryParams("FOO");       // value of FOO query param
-request.queryParamsValues("FOO")  // all values of FOO query param
-request.raw();                    // raw request handed in by Jetty
-request.requestMethod();          // The HTTP method (GET, ..etc)
-request.scheme();                 // "http"
-request.servletPath();            // the servlet path, e.g. /result.jsp
-request.session();                // session management
-request.splat();                  // splat (*) parameters
-request.uri();                    // the uri, e.g. "http://example.com/foo"
-request.url();                    // the url. e.g. "http://example.com/foo"
-request.userAgent();              // user agent
-~~~
+## Implicitly available functionality in route context
+Request and response functionality is provided implicitly in the route context:
+~~~kotlin
+// request related
+attributes()             // the attributes list
+attribute("foo")         // value of foo attribute
+attribute("A", "V")      // sets value of attribute A to V
+contentLength()          // length of request body
+contentType()            // content type of request.body
+contextPath()            // the context path, e.g. "/hello"
+host()                   // the host, e.g. "example.com"
+ip()                     // client IP address
+params("foo")            // value of foo path parameter
+params()                 // map with all parameters
+pathInfo()               // the path info
+port()                   // the server port
+protocol()               // the protocol, e.g. HTTP/1.1
+queryMap()               // the query map
+queryMap("foo")          // query map for a certain parameter
+queryParams()            // the query param list
+queryParams("FOO")       // value of FOO query param
+queryParamsValues("FOO") // all values of FOO query param
+requestMethod()          // The HTTP method (GET, ..etc)
+scheme()                 // "http"
+servletPath()            // the servlet path, e.g. /result.jsp
+session()                // session management
+splat()                  // splat (*) parameters
+uri()                    // the uri, e.g. "http://example.com/foo"
+url()                    // the url. e.g. "http://example.com/foo"
+userAgent()              // user agent
 
-## Response
-Response information and functionality is provided by the response parameter:
+request                  // the request itself
+    .headers()           // the HTTP header list
+    .headers("BAR")      // value of BAR header
+    .body()              // request body sent by the client
+    .bodyAsBytes()       // request body as bytes
+    .cookies("foo")      // the cookie `foo`
+    .cookies()           // request cookies sent by the client
 
-~~~java
-response.body();               // get response content
-response.body("Hello");        // sets content to Hello
-response.header("FOO", "bar"); // sets header FOO with value bar
-response.raw();                // raw response handed in by Jetty
-response.redirect("/example"); // browser redirect to /example
-response.status();             // get the response status
-response.status(401);          // set status code to 401
-response.type();               // get the content type
-response.type("text/xml");     // set content type to text/xml
-~~~
+// response related
+redirect("/example");        // browser redirect to /example
+redirect("/example", 302)    // redirect to /example with status code 302
+status()                     // get the response status
+status(401)                  // set status code to 401
+type()                       // get the response content type
+type("text/xml")             // set the response content type to text/xml
 
-## Query Maps
-Query maps allows you to group parameters to a map by their prefix. This allows you to group two parameters like `user[name]` and `user[age]` to a user map.
-~~~java
-request.queryMap().get("user", "name").value();
-request.queryMap().get("user").get("name").value();
-request.queryMap("user").get("age").integerValue();
-request.queryMap("user").toMap();
-~~~
+response                              // the response itself
+    .body()                           // get response content
+    .body("Hello")                    // sets content to Hello
+    cookies()                         // get map of all request cookies
+    cookie("foo");                    // access request cookie by name
+    cookie("foo", "bar")              // set cookie with a value
+    cookie("foo", "bar", 3600)        // set cookie with a max-age
+    cookie("foo", "bar", 3600, true)  // secure cookie
+    removeCookie("foo")               // remove cookie
+    .header("FOO", "bar")             // sets header FOO with value bar
 
-## Cookies
-~~~java
-request.cookies();                         // get map of all request cookies
-request.cookie("foo");                     // access request cookie by name
-response.cookie("foo", "bar");             // set cookie with a value
-response.cookie("foo", "bar", 3600);       // set cookie with a max-age
-response.cookie("foo", "bar", 3600, true); // secure cookie
-response.removeCookie("foo");              // remove cookie
-~~~
-
-## Sessions
-Every request has access to the session created on the server side, provided with the following methods:
-~~~java
-request.session(true);                     // create and return session
-request.session().attribute("user");       // Get session attribute 'user'
-request.session().attribute("user","foo"); // Set session attribute 'user'
-request.session().removeAttribute("user"); // Remove session attribute 'user'
-request.session().attributes();            // Get all session attributes
-request.session().id();                    // Get session id
-request.session().isNew();                 // Check if session is new
-request.session().raw();                   // Return servlet object
-~~~
+// sessions
+session()                         // get session
+session(create = true)            // create and return session
+session().attribute("user")       // Get session attribute 'user'
+session().attribute("user","foo") // Set session attribute 'user'
+session().removeAttribute("user") // Remove session attribute 'user'
+session().attributes()            // Get all session attributes
+session().id()                    // Get session id
+session().isNew()                 // Check if session is new
+session().raw()                   // Return servlet object
 
 ## Halting
 To immediately stop a request within a filter or route use `halt()`:
-~~~java
-halt();                // halt 
-halt(401);             // halt with status
-halt("Body Message");  // halt with message
-halt(401, "Go away!"); // halt with status and message
+~~~kotlin
+halt()                // halt 
+halt(401)             // halt with status
+halt("Body Message")  // halt with message
+halt(401, "Go away!") // halt with status and message
 ~~~
 
-`halt()` is not intended to be used inside exception-mappers.
+`halt()` is not intended to be used inside exception-mappers. Halt throws a halt exception so if the halt is within
+a try-catch catching this type of exception the halt won't work.
 
 ## Filters
 Before-filters are evaluated **before each request**, and can read the request and read/modify the response.  

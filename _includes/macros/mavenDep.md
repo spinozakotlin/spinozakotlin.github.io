@@ -1,18 +1,5 @@
-<h3>Java</h3>
-~~~xml
-<dependency>
-    <groupId>com.sparkjava</groupId>
-    <artifactId>spark-core</artifactId>
-    <version>{{site.sparkversion}}</version>
-</dependency>
-~~~
-<h3>Kotlin</h3>
-~~~xml
-<dependency>
-    <groupId>com.sparkjava</groupId>
-    <artifactId>spark-kotlin</artifactId>
-    <version>1.0.0-alpha</version>
-</dependency>
+~~~groovy
+'com.spinoza:spinoza:1.0.0-alpha'
 ~~~
 
 [Not familiar with Maven? Click here for more detailed instructions.](/tutorials/maven-setup)
