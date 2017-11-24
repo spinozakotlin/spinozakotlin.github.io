@@ -276,37 +276,33 @@ finally("/foo") {
 }
 ~~~
 
-Filters optionally take a pattern, causing them to be evaluated only if the request path matches that pattern:
-~~~java
-before("/protected/*", (request, response) -> {
-    // ... check if authenticated
-    halt(401, "Go Away!");
-});
-~~~
-
 ## Redirects
 You can trigger a browser redirect with the redirect method on the response:
-~~~java
-response.redirect("/bar");
+~~~kotlin
+redirect("/bar")
 ~~~
 
 You can also trigger a browser redirect with specific HTTP 3XX status code:
-~~~java
-response.redirect("/bar", 301); // moved permanently
+~~~kotlin
+redirect("/bar", 301) // moved permanently
 ~~~
 
 ### Redirect API
 There is also a convenience API for redirects which can be used directly without the response:
 
-~~~java
-// redirect a GET to "/fromPath" to "/toPath"
-redirect.get("/fromPath", "/toPath");
-
-// redirect a POST to "/fromPath" to "/toPath", with status 303
-redirect.post("/fromPath", "/toPath", Redirect.Status.SEE_OTHER);
-
-// redirect any request to "/fromPath" to "/toPath" with status 301
-redirect.any("/fromPath", "/toPath", Redirect.Status.MOVED_PERMANENTLY);
+~~~kotlin
+redirect {
+    any(
+            "/from" to "/hello",
+            "/hi" to "/hello"
+    )
+    get(
+            "/source" to "/target"
+    )
+    post(
+            "/gone" to "/new"
+    )
+}
 ~~~
 
 Remember to **import Spark statically** instead of prefixing it as Spark.redirect
