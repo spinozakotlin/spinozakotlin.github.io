@@ -415,94 +415,44 @@ Initialization must be configured before route mapping. If your application has 
 Standalone Spinoza runs on an embedded [Jetty](http://eclipse.org/jetty/) web server.
 
 ### Port
-By default, Spark runs on port 4567. If you want to set another port, use `port()`. 
-This has to be done before declaring routes and filters:
-
-~~~java
-port(8080); // Spark will run on port 8080
-~~~
-
-### Secure (HTTPS/SSL) {#secure}
-
-You can set the connection to be secure via the `secure()` method.\\
-This has to be done before any route mapping:
-
-~~~java
-secure(keystoreFilePath, keystorePassword, truststoreFilePath, truststorePassword);
-~~~
-
-If you need more help, check out the [FAQ](#enable-ssl).
-
-### ThreadPool
-
-You can set the maximum number of threads easily:
-
-~~~java
-int maxThreads = 8;
-threadPool(maxThreads);
-~~~
-
-You can also configure the minimum numbers of threads, and the idle timeout:
-
-~~~java
-int maxThreads = 8;
-int minThreads = 2;
-int timeOutMillis = 30000;
-threadPool(maxThreads, minThreads, timeOutMillis);
-~~~
+By default, Spinoza runs on port 4567. If you want to set another port, use init DSL. 
 
 ### Waiting for Initialization {#awaitinit}
 You can use the method `awaitInitialization()` to check if the server is ready to handle requests. This is usually done in a separate thread, for example to run a health check module after your server has started.  
 The method causes the current thread to wait until the embedded Jetty server has been initialized. Initialization is triggered by defining routes and/or filters. So, if you're using just one thread don't put this before you define your routes and/or filters.
 
-~~~java
-awaitInitialization(); // Wait for server to be initialized
+~~~kotlin
+awaitInitialization() // Wait for server to be initialized
 ~~~
 
 ### WebSockets
-WebSockets provide a protocol full-duplex communication channel over a single TCP connection, meaning you can send message back and forth over the same connection.
+WebSockets provide a protocol full-duplex communication channel over a single TCP connection, 
+meaning you can send message back and forth over the same connection.
 
-WebSockets only works with the embedded Jetty server, and must be defined before regular HTTP routes. To create a WebSocket route, you need to provide a path and a handler class:
+WebSockets only works with the embedded Jetty server, and must be defined before regular HTTP routes. 
+To create a WebSocket route, use the webSocket DSL
 
-~~~java
-webSocket("/echo", EchoWebSocket.class);
-init(); // Needed if you don't define any HTTP routes after your WebSocket routes
-~~~
-
-~~~java
-import org.eclipse.jetty.websocket.api.*;
-import org.eclipse.jetty.websocket.api.annotations.*;
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-
-@WebSocket
-public class EchoWebSocket {
-
-    // Store sessions if you want to, for example, broadcast a message to all users
-    private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-
-    @OnWebSocketConnect
-    public void connected(Session session) {
-        sessions.add(session);
+~~~kotlin
+webSocket("/ws") {
+    opened {
+        println("[opened] session = " + session)
     }
-
-    @OnWebSocketClose
-    public void closed(Session session, int statusCode, String reason) {
-        sessions.remove(session);
+    received {
+        println("[received] message = $message, session = $session")
     }
-
-    @OnWebSocketMessage
-    public void message(Session session, String message) throws IOException {
-        System.out.println("Got: " + message);   // Print message
-        session.getRemote().sendString(message); // and send it back
+    closed {
+        println("[closed] session = $session, reason = $reason")
     }
-
+    error {
+        println("[error] cause = " + cause)
+    }
 }
+    
+init() // Needed only if you don't define any HTTP routes after your WebSocket routes
 ~~~
 
 ## Other web server
-To run Spark on another web server (instead of the embedded jetty server), an implementation of the interface `spark.servlet.SparkApplication` is needed. You have to initialize your routes in the `init()` method, and the following filter might have to be configured in your web.xml:
+To run Spinoza on another web server (instead of the embedded jetty server), an implementation of the interface `spark.servlet.SparkApplication` is needed. You have to initialize your routes in the `init()` method, and the following filter might have to be configured in your web.xml:
 
 ~~~xml
 <filter>
@@ -520,100 +470,24 @@ To run Spark on another web server (instead of the embedded jetty server), an im
 ~~~
 
 ## GZIP
-GZIP is done automatically if it's in both the request and the response headers. This usually only means that you have to set it in your response headers.
+GZIP is done automatically if it's in both the request and the response headers. 
+This usually only means that you have to set it in your response headers.
 
 If you want to GZIP a single response, you can add it manually to your route:
 
-~~~java
-get("/some-path", (request, response) -> {
-    // code for your get
+~~~kotlin
+get("/aliquid") {
+    // ...
     response.header("Content-Encoding", "gzip");
-});
-~~~
-
-If you want to GZIP everything, you can use an after-filter
-~~~java
-after((request, response) -> {
-    response.header("Content-Encoding", "gzip");
-});
-~~~
-
-## Javadoc
-### javadoc.io
-Javadoc is available at [javadoc.io](http://javadoc.io/doc/com.sparkjava/spark-core).
-
-### Build it yourself
-After getting the source from [GitHub](https://github.com/perwendel/spark) run:
-
-~~~bash
-mvn javadoc:javadoc
-~~~
-The result is put in /target/site/apidocs
-
-
-## Examples and FAQ
-Examples can be found on the project's page on [GitHub](https://github.com/perwendel/spark/blob/master/README.md#examples).
-
-### How do I upload something?
-_Note: This applies to the standard configuration of Spark (embedded jetty). If you're using Spark with some other webserver, this might not apply to you._
-
-To upload a file you need a form and a post handler. First, create a form with the correct enctype, and an input field with the type "file" and a name of your choice (here "upoaded_file"):
-~~~html
-<form method='post' enctype='multipart/form-data'>
-    <input type='file' name='uploaded_file'>
-    <button>Upload picture</button>"
-</form>"
-~~~
-
-For Spark to be able to extract the uploaded file, you have to set a specific request attribute, which allows to use the `getPart()` method on the raw request:
-~~~java
-post("/yourUploadPath", (request, response) -> {
-    request.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
-    try (InputStream is = request.raw().getPart("uploaded_file").getInputStream()) {
-        // Use the input stream to create a file
-    }
-    return "File uploaded";
-});
-~~~
-
-The Java-IO-stuff is left out as it's not Spark-specific, but you can see a fully working example [here](https://github.com/tipsy/spark-file-upload).
-
-### How do I enable SSL/HTTPS?
-Enabling HTTPS/SSL requires you to have a keystore file, which you can generate using the Java keytool [(→ oracle docs)](https://docs.oracle.com/cd/E19509-01/820-3503/ggfen/index.html). Once you have the keystore file, just point to its location and include its password.
-
-~~~java
-String keyStoreLocation = "deploy/keystore.jks";
-String keyStorePassword = "password";
-secure(keyStoreLocation, keyStorePassword, null, null);
-~~~
-Check out the [fully working example](https://github.com/tipsy/spark-ssl) on GitHub if you need more guidance.
-
-### How do I enable logging?
-You might have seen this message when starting Spark:
-~~~bash
-SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
-SLF4J: Defaulting to no-operation (NOP) logger implementation
-SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-~~~
-
-To enable logging, just add the following dependency to your project:
-~~~xml
-<dependency>
-    <groupId>org.slf4j</groupId>
-    <artifactId>slf4j-simple</artifactId>
-    <version>1.7.21</version>
-</dependency>
-~~~
-
-### How do I enable automatic refresh of static files?
-If you use `staticFiles.location()`, meaning you keep your static files in the classpath, static resources are copied to a target folder when you build your application. This means you have to make/build your project in order to refresh static files. A workaround for this is to tell Spark to read static files from the absolute path to the src-directory. If you do this you will see changes instantly when you refresh, but if you build a jar file it will only work on your computer (because of the absolute path). So, **only use this during development.**
-
-~~~java
-if (localhost) {
-    String projectDir = System.getProperty("user.dir");
-    String staticDir = "/src/main/resources/public";
-    staticFiles.externalLocation(projectDir + staticDir);
-} else {
-    staticFiles.location("/public");
 }
 ~~~
+
+If you want to GZIP everything, you can use an after or finally filter
+~~~kotlin
+finally {
+    response.header("Content-Encoding", "gzip");
+}
+~~~
+
+## Examples and FAQ
+Examples can be found on the project's page on [GitHub](https://github.com/perwendel/spark-kotlin/blob/master/README.md#examples).
