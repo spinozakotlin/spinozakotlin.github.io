@@ -62,8 +62,7 @@ import spinoza.*
 fun main(args: Array<String>) {
     get("/salve") {
         "Salve Orbis Terrarum"
-   
-        }
+    }
 }
 ~~~
 
