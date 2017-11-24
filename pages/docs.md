@@ -242,28 +242,38 @@ a try-catch catching this type of exception the halt won't work.
 ## Filters
 Before-filters are evaluated **before each request**, and can read the request and read/modify the response.  
 To stop execution, use `halt()`:
-~~~java
-before((request, response) -> {
-    boolean authenticated;
-    // ... check if authenticated
-    if (!authenticated) {
-        halt(401, "You are not welcome here");
+~~~kotlin
+// matches all requests
+before {
+    if (!authenticated()) {
+        halt(401, "Go Away!")
     }
-});
+}
+
+// matches requests on /protected/*
+before("/protected/*") {
+    if (!authenticated()) {
+        halt(401, "Go Away!")
+    }
+}
 ~~~
 
 After-filters are evaluated **after each request**, and can read the request and read/modify the response:
-~~~java
-after((request, response) -> {
-    response.header("foo", "set by after filter");
-});
+~~~kotlin
+after {
+    response.header("foo", "bar")
+}
 ~~~
 
-After-after-filters are evaluated **after after-filters**. Think of it as a "finally" block.
-~~~java
-afterAfter((request, response) -> {
-    response.header("foo", "set by afterAfter filter");
-});
+Finally-filters are evaluated **after after-filters**. Think of it as a "finally" block.
+~~~kotlin
+finally { 
+    response.header("foo", "bar")    
+}
+    
+finally("/foo") {
+    response.header("foo", "bar")
+}
 ~~~
 
 Filters optionally take a pattern, causing them to be evaluated only if the request path matches that pattern:
