@@ -335,143 +335,84 @@ exception(AuthException::class) {
 }
 ~~~
 
-## Static Files
-You can assign a folder in the classpath serving static files with the `staticFiles.location()` method. Note that the public directory name is not included in the URL.  
-A file `/public/css/style.css` is made available as `http://{host}:{port}/css/style.css`
+## Initialization/Configuration DSL
+If you need to configure Spinoza use the DSL for this where you can configure port, ip, threadpool, HTTPS and static files.
 
-~~~java
-// root is 'src/main/resources', so put files in 'src/main/resources/public'
-staticFiles.location("/public"); // Static files
-~~~
-
-You can also assign an external folder (a folder not in the classpath) to serve static files by using the `staticFiles.externalLocation()` method.\\
-
-~~~java
-staticFiles.externalLocation(System.getProperty("java.io.tmpdir"));
-~~~
-
-Static files location must be configured before route mapping. If your application has no routes, `init()` must be called manually after location is set.
-
-### Cache/Expire time
-You can specify the expire time (in seconds). By default there is no caching.
-
-~~~java
-staticFiles.expireTime(600); // ten minutes
-~~~
-
-### Setting custom headers
-~~~java
-staticFiles.header("Key-1", "Value-1");
-staticFiles.header("Key-1", "New-Value-1"); // Using the same key will overwrite value
-staticFiles.header("Key-2", "Value-2");
-staticFiles.header("Key-3", "Value-3");
-~~~
-
-## ResponseTransformer {#response-transformer}
-Mapped routes that transform the output from the handle method. This is done by extending the `ResponseTransformer` object and passing it to the mapping method. Example of a route transforming output to JSON using Gson:
-
-~~~java
-import com.google.gson.Gson;
-
-public class JsonTransformer implements ResponseTransformer {
-
-    private Gson gson = new Gson();
-
-    @Override
-    public String render(Object model) {
-        return gson.toJson(model);
+~~~kotlin
+// Static API
+config {
+    port = 5500
+    ipAddress = "0.0.0.0"
+    threadPool {
+        maxThreads = 10
+        minThreads = 5
+        idleTimeoutMillis = 1000
     }
+    secure {
+        keystore {
+            file = "/etc/secure/keystore"
+            password = "hardtocrack"
+        }
+        truststore {
+            file = "/etc/secure/truststore"
+            password = "otherdifficultpassword"
+        }
+        needsClientCert = false
+    }
+    staticFiles {
+        location = "/public"
+        externalLocation "/var/static"
+        expiryTime = 36000.seconds
+        headers(
+                "description" to "static content",
+                "licence" to "free to use"
+        )
+        mimeTypes(
+                "cxt" to "text/html"
+        )
+    }
+}
 
+// Instance API
+val http = ignite {
+    port = 5500
+    ipAddress = "0.0.0.0"
+    threadPool {
+        maxThreads = 10
+        minThreads = 5
+        idleTimeoutMillis = 1000
+    }
+    secure {
+        keystore {
+            file = "/etc/secure/keystore"
+            password = "hardtocrack"
+        }
+        truststore {
+            file = "/etc/secure/truststore"
+            password = "otherdifficultpassword"
+        }
+        needsClientCert = false
+    }
+    staticFiles {
+        location = "/public"
+        externalLocation "/var/static"
+        expiryTime = 36000.seconds
+        headers( // custom headers
+                "description" to "static content",
+                "licence" to "free to use"
+        )
+        mimeTypes(
+                "cxt" to "text/html"
+        )
+    }
 }
 ~~~
 
-and how it is used (MyMessage is a bean with one member 'message'):
-
-~~~java
-get("/hello", "application/json", (request, response) -> {
-    return new MyMessage("Hello World");
-}, new JsonTransformer());
-~~~
-
-You can also use Java 8 method references, since ResponseTransformer is an interface with one method:
-
-~~~java
-Gson gson = new Gson();
-get("/hello", (request, response) -> new MyMessage("Hello World"), gson::toJson);
-~~~
-
-## Views and Templates
-Spark has community-provided wrappers for a lot of popular template engines:
-
-<div class="template-engine-list" markdown="1">
-* [Velocity](#velocity) (very mature, feature rich, great IDE support)
-* [Freemarker](#freemarker) (very mature, feature rich, great IDE support)
-* [Mustache](#mustache) (mature, decent IDE support)
-* [Handlebars](#handlebars) (mature, decent IDE support)
-* [Jade](#jade) (mature, decent IDE support)
-* [Thymeleaf](#thymeleaf) (mature, feature rich, decent IDE support)
-* [Pebble](#pebble) (we know very little about this)
-* [Water](#water) (we know very little about this)
-* [jTwig](#jtwig) (we know very little about this)
-* [Jinjava](#jinjava) (we know very little about this)
-* [Jetbrick](#jetbrick) (we know very little about this)
-</div>
-
-There are two main ways of rendering a template in Spark. You can either call render directly in a standard route declaration (recommended), or you can provide the template-engine as a third-route parameter (likely to be removed in the future):
-
-~~~java
-// do this
-get("template-example", (req, res) -> {
-    Map<String, Object> model = new HashMap<>();
-    return new VelocityTemplateEngine().render(
-        new ModelAndView(model, "path-to-template")
-    );
-});
-~~~
-
-~~~java
-// don't do this
-get("template-example", (req, res) -> {
-    Map<String, Object> model = new HashMap<>();
-    return new ModelAndView(model, "path-to-template");
-}, new VelocityTemplateEngine());
-~~~
-
-It can be helpful to create a static utility method for rendering:
-~~~java
-get("template-example", (req, res) -> {
-    Map<String, Object> model = new HashMap<>();
-    return render(model, "path-to-template");
-});
-
-// declare this in a util-class
-public static String render(Map<String, Object> model, String templatePath) {
-    return new VelocityTemplateEngine().render(new ModelAndView(model, templatePath));
-}
-~~~
-{% assign templateEngines = "velocity,freemarker,mustache,handlebars,jade,thymeleaf,pebble,water,jtwig,jinjava,jetbrick" | split: "," %}
-
-{% for templateEngine in templateEngines %}
-<div class="template-engine" markdown="1">
-### {{templateEngine | capitalize}} {#{{templateEngine}}}
-Renders HTML using the {{templateEngine | capitalize}} template engine. 
-Source and example on [GitHub](https://github.com/perwendel/spark-template-engines/tree/master/spark-template-{{templateEngine}}).
-
-<div class="language-xml highlighter-rouge" markdown="1">
-~~~markup
-<dependency>
-    <groupId>com.sparkjava</groupId>
-    <artifactId>spark-template-{{templateEngine}}</artifactId>
-    <version>{{site.templateversion}}</version>
-</dependency>
-~~~
-</div>
-</div>
-{% endfor %}
+Initialization must be configured before route mapping. If your application has no routes, `init()` must be called manually after location is set.
 
 ## Embedded web server
 
-Standalone Spark runs on an embedded [Jetty](http://eclipse.org/jetty/) web server.
+Standalone Spinoza runs on an embedded [Jetty](http://eclipse.org/jetty/) web server.
 
 ### Port
 By default, Spark runs on port 4567. If you want to set another port, use `port()`. 
