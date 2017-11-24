@@ -9,19 +9,14 @@ permalink: /documentation
 * [Getting Started](#getting-started)
 * [Stopping the Server](#stopping-the-server)
 * [Routes](#routes)
-* [Request](#request)
-* [Response](#response)
-* [Query Maps](#query-maps)
-* [Cookies](#cookies)
+* [Route context (request/response)](#implicitly-available-functionality-in-route-context)
 * [Sessions](#sessions)
 * [Halting](#halting)
 * [Filters](#filters)
 * [Redirects](#redirects)
 * [Error Handling](#error-handling)
 * [Exception Mapping](#exception-mapping)
-* [Static Files](#static-files)
-* [ResponseTransformer](#response-transformer)
-* [Views and Templates](#views-and-templates)
+* [Configuration DSL](#configuration-dsl)
 * [Embedded Webserver](#embedded-web-server)
   * [- Port](#port)
   * [- Secure](#secure)
@@ -30,7 +25,6 @@ permalink: /documentation
   * [- WebSockets](#websockets)
 * [Other Webserver](#other-web-server)
 * [GZIP](#gzip)
-* [Javadoc](#javadoc)
 * [Examples/FAQ](#examples-and-faq)
 </div>
 
@@ -334,7 +328,7 @@ exception(AuthException::class) {
 }
 ~~~
 
-## Initialization/Configuration DSL
+## Configuration DSL
 If you need to configure Spinoza use the DSL for this where you can configure port, ip, threadpool, HTTPS and static files.
 
 ~~~kotlin
