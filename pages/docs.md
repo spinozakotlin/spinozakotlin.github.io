@@ -322,14 +322,6 @@ internalServerError {
 }
 ~~~
 
-~~~java
-// Using Route
-internalServerError((req, res) -> {
-    res.type("application/json");
-    return "{\"message\":\"Custom 500 handling\"}";
-});
-~~~
-
 ## Exception Mapping
 To handle exceptions of a configured type for all routes and filters:
 ~~~java
